@@ -219,7 +219,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
       <div id="headerUserArea" class="hidden items-center gap-5">
         <div class="hidden sm:block text-right leading-tight">
           <div id="displayHeaderUser" class="text-[12px] font-medium">Authorized User</div>
-          <div class="text-[9.5px] tracking-[.18em] uppercase text-[#5c5d63] mono">#FIU-47982-LB</div>
+          <div id="headerCaseId" class="text-[9.5px] tracking-[.18em] uppercase text-[#5c5d63] mono">#FIU-47982-LB</div>
         </div>
         <div class="w-px h-7 bg-[rgba(255,255,255,.11)] hidden sm:block"></div>
         <button onclick="logout()" class="link" data-i18n="header_exit">Abmelden</button>
@@ -271,7 +271,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
           <label class="eyebrow block mb-3" data-i18n="auth_label_case">Vorgangs- / Dossier-ID</label>
           <input type="text" id="inputIncidentId" required placeholder="" class="field mono">
           <div class="mt-3 text-[10px] tracking-[.14em] uppercase text-[#5c5d63]">
-            <span data-i18n="auth_format">Zulässiges Format:</span> <span class="mono text-[#8a8a90] tracking-normal">#FIU-47982-LB</span>
+            <span data-i18n="auth_format">Zulässiges Format:</span> <span class="mono text-[#8a8a90] tracking-normal">#FIU-00000-XX</span>
           </div>
         </div>
 
@@ -340,7 +340,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
           <div class="flex items-start justify-between mb-9">
             <div class="keys"><i></i><i></i><i></i></div>
             <div class="text-right text-[9.5px] tracking-[.2em] uppercase text-[#5c5d63] leading-relaxed">
-              Ref. #FIU-47982-LB<br><span data-i18n="report_confidential">Vertraulich</span>
+              <span id="reportRefTop">Ref. #FIU-47982-LB</span><br><span data-i18n="report_confidential">Vertraulich</span>
             </div>
           </div>
 
@@ -375,7 +375,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
           </button>
 
           <p class="mt-7 text-[10.5px] text-[#5c5d63] leading-relaxed text-center">
-            <span data-i18n="report_2fa_hint">Halten Sie Ihre Vorgangs-ID</span> <span class="mono">#FIU-47982-LB</span> <span data-i18n="report_2fa_hint_end">bereit, um die Zweifaktor-Authentifizierung abzuschließen.</span>
+            <span data-i18n="report_2fa_hint">Halten Sie Ihre Vorgangs-ID</span> <span class="mono" id="report2faId">#FIU-47982-LB</span> <span data-i18n="report_2fa_hint_end">bereit, um die Zweifaktor-Authentifizierung abzuschließen.</span>
           </p>
 
           <div class="mt-9 pt-6 border-t border-[rgba(255,255,255,.06)]">
@@ -516,7 +516,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
 
 <footer class="border-t border-[rgba(255,255,255,.11)] py-5">
   <div class="max-w-[1180px] mx-auto px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-center gap-4 text-[9.5px] tracking-[.18em] uppercase text-[#4b4c51]">
-    <span class="mono tracking-normal">Case #FIU-47982-LB</span>
+    <span class="mono tracking-normal" id="footerCaseId">Case #FIU-47982-LB</span>
   </div>
 </footer>
 
@@ -578,7 +578,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
     <h3 class="text-[20px] font-light tracking-[-.01em] mb-8" data-i18n="modal_cert_title">FIU &amp; AMF Compliance &amp; Freigabe</h3>
 
     <dl class="border-t border-[rgba(255,255,255,.11)]">
-      <div class="row"><dt data-i18n="cert_ref">Referenz</dt><dd class="mono text-[11.5px]">#FIU-47982-LB</dd></div>
+      <div class="row"><dt data-i18n="cert_ref">Referenz</dt><dd class="mono text-[11.5px]" id="certRef">#FIU-47982-LB</dd></div>
       <div class="row"><dt data-i18n="cert_framework">Aufsichtsrahmen</dt><dd>MiFID II / AMLD5</dd></div>
       <div class="row"><dt data-i18n="cert_val">Freigegebener Wert</dt><dd class="mono text-[11.5px]" id="certBalance">137,428.00 EUR</dd></div>
       <div class="row"><dt data-i18n="cert_entity">Rechtsträger</dt><dd id="certEntity">Global Settlement Corp</dd></div>
@@ -594,7 +594,7 @@ tr.pending:hover td{ background:rgba(217,160,58,.06); }
     </div>
 
     <div class="mt-7 flex gap-3">
-      <button onclick="copyToClipboard('#FIU-47982-LB-9F8A3C2B', currentLang === 'de' ? 'Hash-Siegel' : currentLang === 'fr' ? 'Sceau de hachage' : 'Hash Seal')" class="btn-ghost flex-1 justify-center" data-i18n="btn_copy_seal">Siegel kopieren</button>
+      <button onclick="copySeal()" class="btn-ghost flex-1 justify-center" data-i18n="btn_copy_seal">Siegel kopieren</button>
       <button onclick="closeCertificateModal()" class="btn flex-1" data-i18n="btn_close">Schließen</button>
     </div>
   </div>
@@ -617,7 +617,7 @@ const translations = {
     auth_format: "Zulässiges Format:",
     auth_submit: "Authentifizieren",
     auth_verifying: "Prüfung läuft",
-    auth_err_id: "Ungültige Vorgangs-ID. Erwartet: ",
+    auth_err_id: "Ungültige Vorgangs-ID. Zulässig: ",
     regulated_title: "Reguliert & zertifiziert",
     report_confidential: "Vertraulich",
     report_eyebrow: "Offizieller Freigabebefund",
@@ -718,7 +718,7 @@ const translations = {
     auth_format: "Permitted Format:",
     auth_submit: "Authenticate",
     auth_verifying: "Verification in progress",
-    auth_err_id: "Invalid Case ID. Expected: ",
+    auth_err_id: "Invalid Case ID. Permitted: ",
     regulated_title: "Regulated & Certified",
     report_confidential: "Confidential",
     report_eyebrow: "Official Clearance Findings",
@@ -819,7 +819,7 @@ const translations = {
     auth_format: "Format autorisé :",
     auth_submit: "S'authentifier",
     auth_verifying: "Vérification en cours",
-    auth_err_id: "ID de dossier invalide. Attendu : ",
+    auth_err_id: "ID de dossier invalide. Autorisé : ",
     regulated_title: "Réglementé & certifié",
     report_confidential: "Confidentiel",
     report_eyebrow: "Rapport d'autorisation officiel",
@@ -908,7 +908,15 @@ const translations = {
 };
 
 let currentLang = 'de';
-const REQUIRED_INCIDENT_ID = 'FIU-47982-LB';
+
+/* ---- Zulässige Vorgangs-IDs: #FIU-47901-LB … #FIU-47931-LB ---- */
+const ALLOWED_INCIDENT_IDS = Array.from({ length: 31 }, (_, i) => 'FIU-' + (47901 + i) + '-LB');
+const ID_RANGE_HINT = '#FIU-47901-LB – #FIU-47931-LB';
+const DEFAULT_CASE_ID = 'FIU-47982-LB';
+
+/* Fixierter Vorgang — bleibt bis zum Abmelden unverändert */
+let currentCaseId = DEFAULT_CASE_ID;
+
 let currentBalance = 137428.00;
 let sessionName = '';
 let clearingPending = false;
@@ -916,6 +924,22 @@ let transactions = [
   { counterparty: 'European Settlement AG', ref: 'INVOICE-2024-8841', isToday: true, timeStr: '09:15', type: 'SCT Inst', amount: '+137,428.00', isPositive: true },
   { counterparty: 'Deutsche Bundesbank Clearing', ref: 'FEE-Q3-CLEARING', isYesterday: true, timeStr: '', type: 'Debit', amount: '-12.50', isPositive: false }
 ];
+
+function caseRef() { return '#' + currentCaseId; }
+
+function applyCaseId() {
+  const ref = caseRef();
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('headerCaseId', ref);
+  set('reportRefTop', 'Ref. ' + ref);
+  set('reportIncidentId', ref);
+  set('report2faId', ref);
+  set('trModalCaseText', ref);
+  set('certRef', ref);
+  set('footerCaseId', 'Case ' + ref);
+  const rem = document.getElementById('inputRemittance');
+  if (rem) rem.value = 'Settlement under Dossier ' + currentCaseId;
+}
 
 function setLanguage(lang) {
   currentLang = lang;
@@ -982,15 +1006,15 @@ function setStage(n, opts) {
 function handleLogin(e) {
   e.preventDefault();
   const rawId = document.getElementById('inputIncidentId').value.trim();
-  const normalizedId = rawId.replace(/^#/, '').toUpperCase();
+  const normalizedId = rawId.replace(/^#/, '').replace(/[\s\-_]/g, '').toUpperCase().replace(/^FIU(\d{5})LB$/, 'FIU-$1-LB');
   const name = document.getElementById('inputUsername').value.trim();
   const err = document.getElementById('loginError');
   const btn = document.getElementById('submitBtn');
   const txt = document.getElementById('btnText'), ico = document.getElementById('btnIcon'), sp = document.getElementById('btnSpinner');
 
-  if (normalizedId !== REQUIRED_INCIDENT_ID) {
+  if (!ALLOWED_INCIDENT_IDS.includes(normalizedId)) {
     err.classList.remove('hidden');
-    document.getElementById('loginErrorMsg').textContent = translations[currentLang].auth_err_id + '#' + REQUIRED_INCIDENT_ID;
+    document.getElementById('loginErrorMsg').textContent = translations[currentLang].auth_err_id + ID_RANGE_HINT;
     return;
   }
   if (!name) return;
@@ -1000,12 +1024,15 @@ function handleLogin(e) {
   ico.classList.add('hidden'); sp.classList.remove('hidden'); btn.disabled = true;
 
   setTimeout(() => {
+    /* Vorgang fixieren */
+    currentCaseId = normalizedId;
+    document.getElementById('inputIncidentId').value = caseRef();
+    applyCaseId();
+
     sessionName = name;
-    const formattedId = '#' + REQUIRED_INCIDENT_ID;
     const loc = currentLang === 'de' ? 'de-DE' : currentLang === 'fr' ? 'fr-FR' : 'en-US';
     document.getElementById('displayHeaderUser').textContent = name;
     document.getElementById('reportUserName').textContent = name;
-    document.getElementById('reportIncidentId').textContent = formattedId;
     document.getElementById('certEntity').textContent = name;
     document.getElementById('reportDate').textContent = new Date().toLocaleDateString(loc, { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -1035,6 +1062,8 @@ function logout() {
   document.getElementById('loginError').classList.add('hidden');
   closeTransferModal(); closeCertificateModal(); setStage(1);
   clearingPending = false;
+  currentCaseId = DEFAULT_CASE_ID;
+  applyCaseId();
   document.getElementById('clearingBanner').classList.add('hidden');
   document.getElementById('clearingFeePanel').classList.add('hidden');
   toast(translations[currentLang].toast_logout, translations[currentLang].toast_logout_sub, 'info');
@@ -1086,6 +1115,8 @@ function openTransferModal() {
   document.getElementById('inputRecipientBIC').value = '';
   document.getElementById('inputTransferAmount').value = '';
   document.getElementById('inputTransferAmount').max = currentBalance;
+  document.getElementById('inputRemittance').value = 'Settlement under Dossier ' + currentCaseId;
+  document.getElementById('trModalCaseText').textContent = caseRef();
   document.getElementById('transferModalAlert').classList.add('hidden');
   document.getElementById('transferModal').classList.remove('hidden');
 }
@@ -1093,6 +1124,11 @@ function closeTransferModal() { document.getElementById('transferModal').classLi
 function setMaxTransferAmount() { document.getElementById('inputTransferAmount').value = currentBalance.toFixed(2); }
 function openCertificateModal() { document.getElementById('certificateModal').classList.remove('hidden'); }
 function closeCertificateModal() { document.getElementById('certificateModal').classList.add('hidden'); }
+
+function copySeal() {
+  const label = currentLang === 'de' ? 'Hash-Siegel' : currentLang === 'fr' ? 'Sceau de hachage' : 'Hash Seal';
+  copyToClipboard(caseRef() + '-9F8A3C2B', label);
+}
 
 /* ============ CLEARING FEE NOTICE ============ */
 function clearingBlockHTML(withActions) {
@@ -1120,7 +1156,7 @@ function clearingBlockHTML(withActions) {
           <span class="fee-amount num">500</span>
           <span class="text-[11px] tracking-[.24em] text-[#ff8b96]">EUR</span>
           <span class="text-[9px] tracking-[.18em] uppercase text-[#b98d92] ml-1">${d.clearing_fee_label}</span>
-          <span class="ml-auto text-[9px] tracking-[.18em] uppercase text-[#b98d92] mono">#FIU-47982-LB</span>
+          <span class="ml-auto text-[9px] tracking-[.18em] uppercase text-[#b98d92] mono">${caseRef()}</span>
         </div>
       </div>
     </div>
@@ -1139,7 +1175,7 @@ function renderClearingNotices() {
 
 function copyClearingNotice() {
   const d = translations[currentLang];
-  const txt = `#FIU-47982-LB — ${d.clearing_fee_title}\n\n${d.clearing_fee_body}`;
+  const txt = `${caseRef()} — ${d.clearing_fee_title}\n\n${d.clearing_fee_body}`;
   const el = document.createElement('textarea');
   el.value = txt;
   document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
@@ -1209,6 +1245,7 @@ function toast(title, msg, type) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeTransferModal(); closeCertificateModal(); } });
 setStage(1, { silent: true });
+applyCaseId();
 </script>
 </body>
 </html>
